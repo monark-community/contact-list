@@ -38,10 +38,20 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   const hasActiveFilters = selectedTags.length > 0 || trustLevelFilter !== null;
 
   const getTrustLevelColor = (level: number) => {
-    // Create smooth red to green gradient
-    const red = Math.max(0, 255 * (10 - level) / 10);
-    const green = Math.max(0, 255 * level / 10);
-    return `rgb(${Math.round(red)}, ${Math.round(green)}, 0)`;
+    // Improved color gradient: red -> yellow -> green
+    if (level <= 5) {
+      // Red to yellow (1-5)
+      const ratio = (level - 1) / 4;
+      const red = 220;
+      const green = Math.round(180 + (75 * ratio)); // 180 to 255
+      return `rgb(${red}, ${green}, 0)`;
+    } else {
+      // Yellow to green (6-10)
+      const ratio = (level - 5) / 5;
+      const red = Math.round(220 * (1 - ratio)); // 220 to 0
+      const green = 200; // Toned down green
+      return `rgb(${red}, ${green}, 0)`;
+    }
   };
 
   // Sort tags alphabetically

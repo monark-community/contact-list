@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info } from 'lucide-react';
+import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info, Pen, Plus, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Contact } from "@/pages/Dashboard";
 import { useToast } from "@/hooks/use-toast";
 
@@ -94,7 +101,14 @@ const ContactDetail = () => {
     interactionCount: 0
   });
 
-  const [tagInput, setTagInput] = useState('');
+  const [showTagSelect, setShowTagSelect] = useState(false);
+
+  // Available tags for selection
+  const availableTags = [
+    'Client', 'Developer', 'Designer', 'DeFi Protocol', 'DAO Member', 
+    'Flagged', 'High Value', 'NFT Creator', 'Partner', 'Potential Scam',
+    'Regular Client', 'Trusted Partner', 'Unverified', 'Validator', 'VIP'
+  ].filter(tag => !editableContact.tags.includes(tag));
 
   // Calculate suggested trust level based on transaction count and other factors
   const calculateSuggestedTrustLevel = () => {
@@ -171,14 +185,14 @@ const ContactDetail = () => {
     navigate('/dashboard');
   };
 
-  const addTag = () => {
-    if (tagInput.trim() && !editableContact.tags.includes(tagInput.trim())) {
+  const addTag = (tag: string) => {
+    if (!editableContact.tags.includes(tag)) {
       setEditableContact(prev => ({
         ...prev,
-        tags: [...prev.tags, tagInput.trim()]
+        tags: [...prev.tags, tag]
       }));
-      setTagInput('');
     }
+    setShowTagSelect(false);
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -198,17 +212,25 @@ const ContactDetail = () => {
   };
 
   const getTrustLevelColor = (level: number) => {
-    // Create smooth red to green gradient
-    const red = Math.max(0, 255 * (10 - level) / 10);
-    const green = Math.max(0, 255 * level / 10);
-    return `rgb(${Math.round(red)}, ${Math.round(green)}, 0)`;
+    // Improved color gradient: red -> yellow -> green
+    if (level <= 5) {
+      // Red to yellow (1-5)
+      const ratio = (level - 1) / 4;
+      const red = 220;
+      const green = Math.round(180 + (75 * ratio)); // 180 to 255
+      return `rgb(${red}, ${green}, 0)`;
+    } else {
+      // Yellow to green (6-10)
+      const ratio = (level - 5) / 5;
+      const red = Math.round(220 * (1 - ratio)); // 220 to 0
+      const green = 200; // Toned down green
+      return `rgb(${red}, ${green}, 0)`;
+    }
   };
 
   const getTrustLevelBgColor = (level: number) => {
-    // Create smooth red to green gradient for background
-    const red = Math.max(0, 255 * (10 - level) / 10);
-    const green = Math.max(0, 255 * level / 10);
-    return `rgba(${Math.round(red)}, ${Math.round(green)}, 0, 0.1)`;
+    const color = getTrustLevelColor(level);
+    return color.replace('rgb(', 'rgba(').replace(')', ', 0.1)');
   };
 
   return (
@@ -234,18 +256,24 @@ const ContactDetail = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <Input
-                        value={editableContact.name || ''}
-                        onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Contact Name"
-                        className="text-2xl font-bold border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
-                      />
-                      <Input
-                        value={editableContact.role}
-                        onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
-                        placeholder="Role"
-                        className="text-slate-600 border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0 mt-2"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editableContact.name || ''}
+                          onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Contact Name"
+                          className="text-2xl font-bold border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
+                        />
+                        <Pen className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Input
+                          value={editableContact.role}
+                          onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
+                          placeholder="Role"
+                          className="text-slate-600 border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
+                        />
+                        <Pen className="h-4 w-4 text-slate-400" />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -281,16 +309,31 @@ const ContactDetail = () => {
                           </button>
                         </Badge>
                       ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                        placeholder="Add tag"
-                        className="text-sm"
-                      />
-                      <Button onClick={addTag} size="sm">Add</Button>
+                      <div className="relative">
+                        <Badge
+                          variant="outline"
+                          className="cursor-pointer bg-slate-50 text-slate-600 border-slate-300 hover:bg-slate-100"
+                          onClick={() => setShowTagSelect(!showTagSelect)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add tag
+                        </Badge>
+                        {showTagSelect && (
+                          <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[200px] max-h-[200px] overflow-y-auto">
+                            {availableTags.map(tag => (
+                              <div
+                                key={tag}
+                                onClick={() => addTag(tag)}
+                                className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm"
+                              >
+                                <Badge variant="outline" className="w-fit bg-blue-50 text-blue-700 border-blue-200">
+                                  {tag}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -316,7 +359,7 @@ const ContactDetail = () => {
               {!isNewContact && (
                 <Card className="bg-white/70 backdrop-blur-sm border-slate-200 mt-6">
                   <CardHeader>
-                    <CardTitle className="text-lg">Recent Transactions</CardTitle>
+                    <CardTitle className="text-lg">Transactions with this Contact</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -404,7 +447,7 @@ const ContactDetail = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center">
+                  <div className="text-center mb-4">
                     <div 
                       className="text-2xl font-bold mb-2"
                       style={{ color: getTrustLevelColor(suggestedTrustLevel) }}
@@ -412,7 +455,7 @@ const ContactDetail = () => {
                       {suggestedTrustLevel}/10
                     </div>
                     <div 
-                      className="w-full rounded-full h-2 mb-2"
+                      className="w-full rounded-full h-2 mb-3"
                       style={{ backgroundColor: getTrustLevelBgColor(suggestedTrustLevel) }}
                     >
                       <div 
@@ -424,43 +467,47 @@ const ContactDetail = () => {
                       />
                     </div>
                     <Button 
-                      variant="outline" 
+                      variant="ghost"
                       size="sm"
                       onClick={() => setEditableContact(prev => ({ ...prev, trustLevel: suggestedTrustLevel }))}
-                      className="text-xs"
+                      className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       Apply Suggestion
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* Transaction Stats */}
-              {!isNewContact && (
-                <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Transaction History</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="h-4 w-4 text-slate-500" />
-                          <span className="text-sm text-slate-600">Total Transactions</span>
-                        </div>
-                        <span className="font-semibold">{editableContact.interactionCount}</span>
+                  {/* Detailed Metrics */}
+                  <div className="space-y-3 mt-4 pt-4 border-t">
+                    <h4 className="text-sm font-medium text-slate-700">Detailed Metrics</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Total Transactions</span>
+                        <span className="font-medium">{editableContact.interactionCount}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-slate-500" />
-                          <span className="text-sm text-slate-600">Last Transaction</span>
-                        </div>
-                        <span className="text-sm">{formatDate(contact?.lastInteraction)}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Positive Tags</span>
+                        <span className="font-medium text-green-600">
+                          {editableContact.tags.filter(tag => 
+                            ['Trusted Partner', 'Developer', 'Client', 'High Value'].includes(tag)
+                          ).length}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Risk Flags</span>
+                        <span className="font-medium text-red-600">
+                          {editableContact.tags.filter(tag => 
+                            ['Flagged', 'Potential Scam', 'Unverified'].includes(tag)
+                          ).length}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Last Transaction</span>
+                        <span className="text-slate-500 text-xs">{formatDate(contact?.lastInteraction)}</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
