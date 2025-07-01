@@ -138,19 +138,20 @@ const Dashboard = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>(mockContacts);
 
   // Get all unique tags from contacts
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
-    mockContacts.forEach(contact => {
+    contacts.forEach(contact => {
       contact.tags.forEach(tag => tagSet.add(tag));
     });
     return Array.from(tagSet);
-  }, []);
+  }, [contacts]);
 
   // Filter contacts based on search and filters
   const filteredContacts = useMemo(() => {
-    return mockContacts.filter(contact => {
+    return contacts.filter(contact => {
       // Search filter
       const matchesSearch = !searchTerm || 
         contact.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -168,10 +169,24 @@ const Dashboard = () => {
 
       return matchesSearch && matchesTags && matchesTrustLevel;
     });
-  }, [searchTerm, selectedTags, trustLevelFilter]);
+  }, [searchTerm, selectedTags, trustLevelFilter, contacts]);
 
   const handleAddContact = () => {
     navigate('/contact/new');
+  };
+
+  const handleUpdateContact = (updatedContact: Contact) => {
+    setContacts(prevContacts => 
+      prevContacts.map(contact => 
+        contact.id === updatedContact.id ? updatedContact : contact
+      )
+    );
+  };
+
+  const handleDeleteContact = (contactId: string) => {
+    setContacts(prevContacts => 
+      prevContacts.filter(contact => contact.id !== contactId)
+    );
   };
 
   return (
@@ -230,7 +245,7 @@ const Dashboard = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">
-                  Showing {filteredContacts.length} of {mockContacts.length} contacts
+                  Showing {filteredContacts.length} of {contacts.length} contacts
                 </span>
                 {(selectedTags.length > 0 || trustLevelFilter !== null || searchTerm) && (
                   <Button
@@ -254,7 +269,12 @@ const Dashboard = () => {
         {/* Contacts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredContacts.map(contact => (
-            <ContactCard key={contact.id} contact={contact} />
+            <ContactCard 
+              key={contact.id} 
+              contact={contact} 
+              onUpdate={handleUpdateContact}
+              onDelete={handleDeleteContact}
+            />
           ))}
         </div>
 
