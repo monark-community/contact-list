@@ -37,8 +37,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
   const hasActiveFilters = selectedTags.length > 0 || trustLevelFilter !== null;
 
+  const getTrustLevelColor = (level: number) => {
+    // Create smooth red to green gradient
+    const red = Math.max(0, 255 * (10 - level) / 10);
+    const green = Math.max(0, 255 * level / 10);
+    return `rgb(${Math.round(red)}, ${Math.round(green)}, 0)`;
+  };
+
+  // Sort tags alphabetically
+  const sortedTags = [...allTags].sort();
+
   return (
-    <Card className="bg-white/70 backdrop-blur-sm border-slate-200 sticky top-24">
+    <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-slate-800">
@@ -63,7 +73,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <h4 className="text-sm font-medium text-slate-700 mb-3">
             Minimum Trust Level
             {trustLevelFilter !== null && (
-              <span className="ml-2 text-blue-600 font-semibold">
+              <span 
+                className="ml-2 font-semibold"
+                style={{ color: getTrustLevelColor(trustLevelFilter) }}
+              >
                 {trustLevelFilter}+
               </span>
             )}
@@ -82,8 +95,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </div>
             
             <div className="flex justify-between text-xs text-slate-500">
-              <span>Low (1)</span>
-              <span>High (10)</span>
+              <span style={{ color: getTrustLevelColor(1) }}>Low (1)</span>
+              <span style={{ color: getTrustLevelColor(10) }}>High (10)</span>
             </div>
             
             {trustLevelFilter !== null && (
@@ -113,17 +126,17 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
           </h4>
           
-          {allTags.length === 0 ? (
+          {sortedTags.length === 0 ? (
             <p className="text-sm text-slate-500 italic">
               No tags available yet
             </p>
           ) : (
-            <div className="space-y-2">
-              {allTags.map(tag => (
+            <div className="flex flex-wrap gap-2">
+              {sortedTags.map(tag => (
                 <Badge
                   key={tag}
                   variant={selectedTags.includes(tag) ? "default" : "outline"}
-                  className={`cursor-pointer w-full justify-start text-xs transition-colors ${
+                  className={`cursor-pointer w-fit text-xs transition-colors ${
                     selectedTags.includes(tag)
                       ? "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200"
                       : "hover:bg-slate-100"

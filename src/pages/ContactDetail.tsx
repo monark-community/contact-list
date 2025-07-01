@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Contact } from "@/pages/Dashboard";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,6 +96,27 @@ const ContactDetail = () => {
 
   const [tagInput, setTagInput] = useState('');
 
+  // Calculate suggested trust level based on transaction count and other factors
+  const calculateSuggestedTrustLevel = () => {
+    if (isNewContact) return 5;
+    
+    const baseScore = Math.min(editableContact.interactionCount * 0.5, 5);
+    const hasPositiveTags = editableContact.tags.some(tag => 
+      ['Trusted Partner', 'Developer', 'Client', 'High Value'].includes(tag)
+    );
+    const hasNegativeTags = editableContact.tags.some(tag => 
+      ['Flagged', 'Potential Scam', 'Unverified'].includes(tag)
+    );
+    
+    let suggested = baseScore;
+    if (hasPositiveTags) suggested += 2;
+    if (hasNegativeTags) suggested -= 3;
+    
+    return Math.max(1, Math.min(10, Math.round(suggested)));
+  };
+
+  const suggestedTrustLevel = calculateSuggestedTrustLevel();
+
   if (!isNewContact && !contact) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-8">
@@ -176,204 +198,274 @@ const ContactDetail = () => {
   };
 
   const getTrustLevelColor = (level: number) => {
-    if (level >= 8) return 'bg-green-500';
-    if (level >= 5) return 'bg-yellow-500';
-    return 'bg-red-500';
+    // Create smooth red to green gradient
+    const red = Math.max(0, 255 * (10 - level) / 10);
+    const green = Math.max(0, 255 * level / 10);
+    return `rgb(${Math.round(red)}, ${Math.round(green)}, 0)`;
+  };
+
+  const getTrustLevelBgColor = (level: number) => {
+    // Create smooth red to green gradient for background
+    const red = Math.max(0, 255 * (10 - level) / 10);
+    const green = Math.max(0, 255 * level / 10);
+    return `rgba(${Math.round(red)}, ${Math.round(green)}, 0, 0.1)`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          {!isNewContact && (
-            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-              <Trash2 className="h-4 w-4" />
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6 flex items-center justify-between">
+            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
             </Button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Info */}
-          <div className="lg:col-span-2">
-            <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <Input
-                      value={editableContact.name || ''}
-                      onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Contact Name"
-                      className="text-2xl font-bold border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
-                    />
-                    <Input
-                      value={editableContact.role}
-                      onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
-                      placeholder="Role"
-                      className="text-slate-600 border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0 mt-2"
-                    />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Address */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">Wallet Address</h3>
-                  <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-lg">
-                    <Input
-                      value={editableContact.address}
-                      onChange={(e) => setEditableContact(prev => ({ ...prev, address: e.target.value }))}
-                      placeholder="0x..."
-                      className="font-mono text-sm border-none bg-transparent shadow-none focus-visible:ring-0 p-0"
-                    />
-                    <Button variant="ghost" size="sm" onClick={handleCopyAddress}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Tags */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">Tags</h3>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {editableContact.tags.map(tag => (
-                      <Badge key={tag} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {tag}
-                        <button
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 text-blue-500 hover:text-blue-700"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addTag()}
-                      placeholder="Add tag"
-                      className="text-sm"
-                    />
-                    <Button onClick={addTag} size="sm">Add</Button>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-slate-700 mb-2">Notes</h3>
-                  <Textarea
-                    value={editableContact.notes}
-                    onChange={(e) => setEditableContact(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Add notes about this contact..."
-                    className="resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                <Button onClick={handleSave} className="w-full">
-                  {isNewContact ? 'Create Contact' : 'Save Changes'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Transactions List */}
             {!isNewContact && (
-              <Card className="bg-white/70 backdrop-blur-sm border-slate-200 mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Transactions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockTransactions.map(tx => (
-                      <div key={tx.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-sm font-medium ${tx.type === 'Sent' ? 'text-red-600' : 'text-green-600'}`}>
-                              {tx.type}
-                            </span>
-                            <span className="text-sm text-slate-600">{tx.amount}</span>
-                          </div>
-                          <code className="text-xs text-slate-500">
-                            {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
-                          </code>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-slate-600">{formatDate(tx.date)}</div>
-                          <div className="text-xs text-green-600">{tx.status}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Button variant="ghost" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Trust Level */}
-            <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Trust Level</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center mb-4">
-                  <div className="text-3xl font-bold text-slate-800 mb-2">
-                    {editableContact.trustLevel}/10
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 mb-4">
-                    <div 
-                      className={`h-2 rounded-full ${getTrustLevelColor(editableContact.trustLevel)}`}
-                      style={{ width: `${editableContact.trustLevel * 10}%` }}
-                    />
-                  </div>
-                </div>
-                <Slider
-                  value={[editableContact.trustLevel]}
-                  onValueChange={(value) => setEditableContact(prev => ({ ...prev, trustLevel: value[0] }))}
-                  max={10}
-                  min={1}
-                  step={1}
-                  className="w-full"
-                />
-              </CardContent>
-            </Card>
-
-            {/* Transaction Stats */}
-            {!isNewContact && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Info */}
+            <div className="lg:col-span-2">
               <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
                 <CardHeader>
-                  <CardTitle className="text-lg">Transaction History</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <Input
+                        value={editableContact.name || ''}
+                        onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Contact Name"
+                        className="text-2xl font-bold border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
+                      />
+                      <Input
+                        value={editableContact.role}
+                        onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
+                        placeholder="Role"
+                        className="text-slate-600 border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0 mt-2"
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="h-4 w-4 text-slate-500" />
-                        <span className="text-sm text-slate-600">Total Transactions</span>
-                      </div>
-                      <span className="font-semibold">{editableContact.interactionCount}</span>
+                  {/* Address */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-slate-700 mb-2">Wallet Address</h3>
+                    <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-lg">
+                      <Input
+                        value={editableContact.address}
+                        onChange={(e) => setEditableContact(prev => ({ ...prev, address: e.target.value }))}
+                        placeholder="0x..."
+                        className="font-mono text-sm border-none bg-transparent shadow-none focus-visible:ring-0 p-0"
+                      />
+                      <Button variant="ghost" size="sm" onClick={handleCopyAddress}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-slate-500" />
-                        <span className="text-sm text-slate-600">Last Transaction</span>
-                      </div>
-                      <span className="text-sm">{formatDate(contact?.lastInteraction)}</span>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-slate-700 mb-2">Tags</h3>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {editableContact.tags.map(tag => (
+                        <Badge key={tag} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 text-blue-500 hover:text-blue-700"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                        placeholder="Add tag"
+                        className="text-sm"
+                      />
+                      <Button onClick={addTag} size="sm">Add</Button>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-slate-700 mb-2">Notes</h3>
+                    <Textarea
+                      value={editableContact.notes}
+                      onChange={(e) => setEditableContact(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Add notes about this contact..."
+                      className="resize-none"
+                      rows={3}
+                    />
+                  </div>
+
+                  <Button onClick={handleSave} className="w-full">
+                    {isNewContact ? 'Create Contact' : 'Save Changes'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Transactions List */}
+              {!isNewContact && (
+                <Card className="bg-white/70 backdrop-blur-sm border-slate-200 mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Recent Transactions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {mockTransactions.map(tx => (
+                        <div key={tx.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-sm font-medium ${tx.type === 'Sent' ? 'text-red-600' : 'text-green-600'}`}>
+                                {tx.type}
+                              </span>
+                              <span className="text-sm text-slate-600">{tx.amount}</span>
+                            </div>
+                            <code className="text-xs text-slate-500">
+                              {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
+                            </code>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-slate-600">{formatDate(tx.date)}</div>
+                            <div className="text-xs text-green-600">{tx.status}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Trust Level */}
+              <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">Trust Level</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center mb-4">
+                    <div 
+                      className="text-3xl font-bold mb-2"
+                      style={{ color: getTrustLevelColor(editableContact.trustLevel) }}
+                    >
+                      {editableContact.trustLevel}/10
+                    </div>
+                    <div 
+                      className="w-full rounded-full h-2 mb-4"
+                      style={{ backgroundColor: getTrustLevelBgColor(editableContact.trustLevel) }}
+                    >
+                      <div 
+                        className="h-2 rounded-full"
+                        style={{ 
+                          backgroundColor: getTrustLevelColor(editableContact.trustLevel),
+                          width: `${editableContact.trustLevel * 10}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <Slider
+                    value={[editableContact.trustLevel]}
+                    onValueChange={(value) => setEditableContact(prev => ({ ...prev, trustLevel: value[0] }))}
+                    max={10}
+                    min={1}
+                    step={1}
+                    className="w-full"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Suggested Trust Level */}
+              <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">Suggested Trust Level</CardTitle>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-slate-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          Our platform calculates trust scores based on transaction history, 
+                          contact tags, and network reputation. This is our recommended 
+                          trust level for this contact.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div 
+                      className="text-2xl font-bold mb-2"
+                      style={{ color: getTrustLevelColor(suggestedTrustLevel) }}
+                    >
+                      {suggestedTrustLevel}/10
+                    </div>
+                    <div 
+                      className="w-full rounded-full h-2 mb-2"
+                      style={{ backgroundColor: getTrustLevelBgColor(suggestedTrustLevel) }}
+                    >
+                      <div 
+                        className="h-2 rounded-full"
+                        style={{ 
+                          backgroundColor: getTrustLevelColor(suggestedTrustLevel),
+                          width: `${suggestedTrustLevel * 10}%` 
+                        }}
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setEditableContact(prev => ({ ...prev, trustLevel: suggestedTrustLevel }))}
+                      className="text-xs"
+                    >
+                      Apply Suggestion
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            )}
+
+              {/* Transaction Stats */}
+              {!isNewContact && (
+                <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Transaction History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="h-4 w-4 text-slate-500" />
+                          <span className="text-sm text-slate-600">Total Transactions</span>
+                        </div>
+                        <span className="font-semibold">{editableContact.interactionCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-slate-500" />
+                          <span className="text-sm text-slate-600">Last Transaction</span>
+                        </div>
+                        <span className="text-sm">{formatDate(contact?.lastInteraction)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

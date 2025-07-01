@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, User, Eye } from 'lucide-react';
+import { Search, Plus, User, Eye, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import FilterPanel from "@/components/FilterPanel";
 import { useWallet } from "@/contexts/WalletContext";
 import { useNavigate } from 'react-router-dom';
@@ -71,6 +72,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (!wallet.isConnected) {
@@ -183,25 +185,41 @@ const Dashboard = () => {
             </Button>
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <Input
-              placeholder="Search contacts by name, address, or role..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
-            />
-          </div>
+          {/* Search and Filter Toggle */}
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Search contacts by name, address, or role..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                className="bg-white/70 backdrop-blur-sm border-slate-200"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+              </Button>
+            </div>
 
-          {/* Filters */}
-          <FilterPanel
-            allTags={allTags}
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            trustLevelFilter={trustLevelFilter}
-            onTrustLevelChange={setTrustLevelFilter}
-          />
+            {/* Collapsible Filters */}
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleContent className="space-y-2">
+                <FilterPanel
+                  allTags={allTags}
+                  selectedTags={selectedTags}
+                  onTagsChange={setSelectedTags}
+                  trustLevelFilter={trustLevelFilter}
+                  onTrustLevelChange={setTrustLevelFilter}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
 
           {/* Contacts Table */}
           {filteredContacts.length === 0 ? (
