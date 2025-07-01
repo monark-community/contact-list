@@ -1,9 +1,9 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Shield, Users, Tag, Zap, Eye, Lock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from 'react-router-dom';
+import { useWallet } from "@/contexts/WalletContext";
 
 const features = [
   {
@@ -40,9 +40,16 @@ const features = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { wallet, connect } = useWallet();
+
+  useEffect(() => {
+    if (wallet.isConnected) {
+      navigate('/dashboard');
+    }
+  }, [wallet.isConnected, navigate]);
 
   const handleGetStarted = () => {
-    // This will later trigger wallet connection
+    connect();
     navigate('/dashboard');
   };
 

@@ -1,13 +1,21 @@
-
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, Wallet, Tag, Filter, User } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, Filter, User, Eye } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ContactCard from "@/components/ContactCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import AddContactDialog from "@/components/AddContactDialog";
 import FilterPanel from "@/components/FilterPanel";
+import { useWallet } from "@/contexts/WalletContext";
+import { useNavigate } from 'react-router-dom';
 
 export interface Contact {
   id: string;
@@ -57,12 +65,20 @@ const mockContacts: Contact[] = [
 ];
 
 const Dashboard = () => {
+  const { wallet } = useWallet();
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState<Contact[]>(mockContacts);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  useEffect(() => {
+    if (!wallet.isConnected) {
+      navigate('/');
+    }
+  }, [wallet.isConnected, navigate]);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -106,6 +122,30 @@ const Dashboard = () => {
   const handleDeleteContact = (contactId: string) => {
     setContacts(prev => prev.filter(contact => contact.id !== contactId));
   };
+
+  const formatAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const getTrustLevelColor = (level: number) => {
+    if (level >= 8) return 'text-green-600';
+    if (level >= 5) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getTrustLevelText = (level: number) => {
+    if (level >= 8) return 'High';
+    if (level >= 5) return 'Medium';
+    return 'Low';
+  };
+
+  const handleRowClick = (contactId: string) => {
+    navigate(`/contact/${contactId}`);
+  };
+
+  if (!wallet.isConnected) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
@@ -200,35 +240,7 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Active Filters */}
-            {(selectedTags.length > 0 || trustLevelFilter !== null) && (
-              <div className="mb-6">
-                <div className="flex flex-wrap gap-2">
-                  {selectedTags.map(tag => (
-                    <Badge 
-                      key={tag} 
-                      variant="secondary" 
-                      className="bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer"
-                      onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
-                    >
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag} ×
-                    </Badge>
-                  ))}
-                  {trustLevelFilter !== null && (
-                    <Badge 
-                      variant="secondary"
-                      className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer"
-                      onClick={() => setTrustLevelFilter(null)}
-                    >
-                      Trust Level {trustLevelFilter}+ ×
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Contacts Grid */}
+            {/* Contacts Table */}
             {filteredContacts.length === 0 ? (
               <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
                 <CardContent className="flex flex-col items-center justify-center py-12">
@@ -249,16 +261,76 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredContacts.map(contact => (
-                  <ContactCard
-                    key={contact.id}
-                    contact={contact}
-                    onUpdate={handleUpdateContact}
-                    onDelete={handleDeleteContact}
-                  />
-                ))}
-              </div>
+              <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Trust Level</TableHead>
+                      <TableHead>Tags</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredContacts.map(contact => (
+                      <TableRow 
+                        key={contact.id} 
+                        className="cursor-pointer hover:bg-slate-50/50"
+                        onClick={() => handleRowClick(contact.id)}
+                      >
+                        <TableCell className="font-medium">
+                          {contact.name || 'Unknown'}
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded">
+                            {formatAddress(contact.address)}
+                          </code>
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {contact.role}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-medium ${getTrustLevelColor(contact.trustLevel)}`}>
+                            {contact.trustLevel}/10 ({getTrustLevelText(contact.trustLevel)})
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {contact.tags.slice(0, 2).map(tag => (
+                              <Badge 
+                                key={tag} 
+                                variant="outline" 
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                            {contact.tags.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{contact.tags.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRowClick(contact.id);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
             )}
           </div>
         </div>

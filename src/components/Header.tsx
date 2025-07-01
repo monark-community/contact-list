@@ -1,13 +1,10 @@
 
 import React from 'react';
 import { Wallet } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import ConnectWallet from './ConnectWallet';
 
 const Header = () => {
-  const location = useLocation();
-  const isDashboard = location.pathname === '/dashboard';
-
   return (
     <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -25,16 +22,6 @@ const Header = () => {
           </Link>
           
           <div className="flex items-center space-x-4">
-            {isDashboard && (
-              <nav className="hidden md:flex items-center space-x-6">
-                <Link 
-                  to="/dashboard" 
-                  className="text-slate-600 hover:text-slate-800 font-medium"
-                >
-                  Dashboard
-                </Link>
-              </nav>
-            )}
             <ConnectWallet />
           </div>
         </div>
