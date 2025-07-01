@@ -47,6 +47,7 @@ const mockContacts: Contact[] = [
   {
     id: '3',
     address: '0x9f3hj109551bD432803012645Hac136c9331q8s9d',
+    name: 'Charlie Brown',
     tags: ['Flagged', 'Potential Scam'],
     notes: 'Multiple failed transactions and suspicious behavior.',
     role: 'Unknown',

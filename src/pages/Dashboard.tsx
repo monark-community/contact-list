@@ -158,13 +158,26 @@ const Dashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
   const contactsPerPage = 20;
 
-  const filteredContacts = mockContacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Get all unique tags from contacts
+  const allTags = Array.from(new Set(mockContacts.flatMap(contact => contact.tags))).sort();
+
+  const filteredContacts = mockContacts.filter(contact => {
+    const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesTags = selectedTags.length === 0 || 
+      selectedTags.some(tag => contact.tags.includes(tag));
+    
+    const matchesTrustLevel = trustLevelFilter === null || 
+      contact.trustLevel >= trustLevelFilter;
+    
+    return matchesSearch && matchesTags && matchesTrustLevel;
+  });
 
   const totalPages = Math.ceil(filteredContacts.length / contactsPerPage);
   const startIndex = (currentPage - 1) * contactsPerPage;
@@ -259,7 +272,13 @@ const Dashboard = () => {
 
         {showFilters && (
           <div className="mb-6">
-            <FilterPanel />
+            <FilterPanel
+              allTags={allTags}
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              trustLevelFilter={trustLevelFilter}
+              onTrustLevelChange={setTrustLevelFilter}
+            />
           </div>
         )}
 
