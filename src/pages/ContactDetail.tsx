@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info, Plus, Check } from 'lucide-react';
+import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info, Plus, Check, Search, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
-  Select,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -101,13 +108,22 @@ const ContactDetail = () => {
   });
 
   const [showTagSelect, setShowTagSelect] = useState(false);
+  const [tagSearch, setTagSearch] = useState('');
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Available tags for selection
-  const availableTags = [
+  const allAvailableTags = [
     'Client', 'Developer', 'Designer', 'DeFi Protocol', 'DAO Member', 
     'Flagged', 'High Value', 'NFT Creator', 'Partner', 'Potential Scam',
-    'Regular Client', 'Trusted Partner', 'Unverified', 'Validator', 'VIP'
+    'Regular Client', 'Trusted Partner', 'Unverified', 'Validator', 'VIP',
+    'Exchange', 'Whale', 'Bot', 'Institutional', 'Retail', 'Mining Pool',
+    'Smart Contract', 'Multisig', 'Cold Storage', 'Hot Wallet'
   ].filter(tag => !editableContact.tags.includes(tag));
+
+  const filteredTags = allAvailableTags.filter(tag => 
+    tag.toLowerCase().includes(tagSearch.toLowerCase())
+  );
 
   // Calculate suggested trust level based on transaction count and other factors
   const calculateSuggestedTrustLevel = () => {
@@ -166,6 +182,7 @@ const ContactDetail = () => {
 
   const handleSave = () => {
     // In a real app, this would save to backend
+    setHasUnsavedChanges(false);
     toast({
       title: "Contact saved",
       description: isNewContact ? "New contact created successfully" : "Contact updated successfully",
@@ -190,8 +207,10 @@ const ContactDetail = () => {
         ...prev,
         tags: [...prev.tags, tag]
       }));
+      setHasUnsavedChanges(true);
     }
     setShowTagSelect(false);
+    setTagSearch('');
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -199,6 +218,20 @@ const ContactDetail = () => {
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleManageTags = () => {
+    if (hasUnsavedChanges) {
+      setShowLeaveWarning(true);
+    } else {
+      navigate('/tags');
+    }
+  };
+
+  const confirmLeave = () => {
+    setShowLeaveWarning(false);
+    navigate('/tags');
   };
 
   const formatDate = (date?: Date) => {
@@ -254,13 +287,19 @@ const ContactDetail = () => {
                     <div className="flex-1">
                       <Input
                         value={editableContact.name || ''}
-                        onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
+                        onChange={(e) => {
+                          setEditableContact(prev => ({ ...prev, name: e.target.value }));
+                          setHasUnsavedChanges(true);
+                        }}
                         placeholder="Contact Name"
                         className="text-2xl font-bold mb-2"
                       />
                       <Input
                         value={editableContact.role}
-                        onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
+                        onChange={(e) => {
+                          setEditableContact(prev => ({ ...prev, role: e.target.value }));
+                          setHasUnsavedChanges(true);
+                        }}
                         placeholder="Role"
                         className="text-slate-600"
                       />
@@ -279,7 +318,10 @@ const ContactDetail = () => {
                     <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-lg">
                       <Input
                         value={editableContact.address}
-                        onChange={(e) => setEditableContact(prev => ({ ...prev, address: e.target.value }))}
+                        onChange={(e) => {
+                          setEditableContact(prev => ({ ...prev, address: e.target.value }));
+                          setHasUnsavedChanges(true);
+                        }}
                         placeholder="0x..."
                         className="font-mono text-sm"
                       />
@@ -291,7 +333,18 @@ const ContactDetail = () => {
 
                   {/* Tags */}
                   <div className="mb-6">
-                    <h3 className="text-sm font-medium text-slate-700 mb-2">Tags</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-slate-700">Tags</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleManageTags}
+                        className="text-xs text-slate-500 hover:text-slate-700"
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        Manage Tags
+                      </Button>
+                    </div>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {editableContact.tags.map(tag => (
                         <Badge key={tag} variant="outline" className="w-fit bg-blue-50 text-blue-700 border-blue-200">
@@ -314,18 +367,48 @@ const ContactDetail = () => {
                           Add tag
                         </Badge>
                         {showTagSelect && (
-                          <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[200px] max-h-[200px] overflow-y-auto">
-                            {availableTags.sort().map(tag => (
-                              <div
-                                key={tag}
-                                onClick={() => addTag(tag)}
-                                className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm"
-                              >
-                                <Badge variant="outline" className="w-fit bg-blue-50 text-blue-700 border-blue-200">
-                                  {tag}
-                                </Badge>
+                          <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[300px] max-h-[300px] overflow-hidden">
+                            <div className="p-2 border-b">
+                              <div className="relative">
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                  placeholder="Search tags..."
+                                  value={tagSearch}
+                                  onChange={(e) => setTagSearch(e.target.value)}
+                                  className="pl-8"
+                                />
                               </div>
-                            ))}
+                            </div>
+                            <div className="overflow-y-auto max-h-[200px]">
+                              {filteredTags.length > 0 ? (
+                                filteredTags.map(tag => (
+                                  <div
+                                    key={tag}
+                                    onClick={() => addTag(tag)}
+                                    className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm border-b last:border-b-0"
+                                  >
+                                    <Badge variant="outline" className="w-fit bg-blue-50 text-blue-700 border-blue-200">
+                                      {tag}
+                                    </Badge>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="p-3 text-center text-slate-500 text-sm">
+                                  No tags found
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-2 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleManageTags}
+                                className="w-full"
+                              >
+                                <Settings className="h-3 w-3 mr-1" />
+                                Manage Tags
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -337,7 +420,10 @@ const ContactDetail = () => {
                     <h3 className="text-sm font-medium text-slate-700 mb-2">Notes</h3>
                     <Textarea
                       value={editableContact.notes}
-                      onChange={(e) => setEditableContact(prev => ({ ...prev, notes: e.target.value }))}
+                      onChange={(e) => {
+                        setEditableContact(prev => ({ ...prev, notes: e.target.value }));
+                        setHasUnsavedChanges(true);
+                      }}
                       placeholder="Add notes about this contact..."
                       className="resize-none"
                       rows={3}
@@ -351,7 +437,7 @@ const ContactDetail = () => {
               </Card>
             </div>
 
-            {/* Sidebar */}
+            {/* Sidebar - Trust Level Cards */}
             <div className="space-y-6">
               {/* Trust Level */}
               <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
@@ -504,6 +590,26 @@ const ContactDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Leave Warning Dialog */}
+        <Dialog open={showLeaveWarning} onOpenChange={setShowLeaveWarning}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Unsaved Changes</DialogTitle>
+              <DialogDescription>
+                You have unsaved changes. Are you sure you want to leave this page? Your changes will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowLeaveWarning(false)}>
+                Stay on Page
+              </Button>
+              <Button variant="destructive" onClick={confirmLeave}>
+                Leave Anyway
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );

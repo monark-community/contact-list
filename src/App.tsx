@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ContactDetail from "./pages/ContactDetail";
+import TagManagement from "./pages/TagManagement";
+import TagEditor from "./pages/TagEditor";
 import Preferences from "./pages/Preferences";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
@@ -28,6 +30,8 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/contact/:id" element={<ContactDetail />} />
+              <Route path="/tags" element={<TagManagement />} />
+              <Route path="/tags/:id" element={<TagEditor />} />
               <Route path="/preferences" element={<Preferences />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
