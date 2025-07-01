@@ -74,7 +74,7 @@ const mockTransactions = [
   },
   {
     id: '3',
-    hash: '0x3c4d5e6f7890abcdef1234567890abcdef123456',
+    hash: '0x3c4d5e6f7890abcdef123456789012345678901234',
     type: 'Sent',
     amount: '0.8 ETH',
     date: new Date('2024-05-20'),
@@ -222,8 +222,8 @@ const ContactDetail = () => {
     } else {
       // Yellow to green (6-10)
       const ratio = (level - 5) / 5;
-      const red = Math.round(220 * (1 - ratio)); // 220 to 0
-      const green = 200; // Toned down green
+      const red = Math.round(200 * (1 - ratio)); // 200 to 0 (darker yellow starting point)
+      const green = 180; // Toned down green
       return `rgb(${red}, ${green}, 0)`;
     }
   };
@@ -242,11 +242,6 @@ const ContactDetail = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            {!isNewContact && (
-              <Button variant="ghost" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -256,25 +251,24 @@ const ContactDetail = () => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={editableContact.name || ''}
-                          onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Contact Name"
-                          className="text-2xl font-bold border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
-                        />
-                        <Pen className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Input
-                          value={editableContact.role}
-                          onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
-                          placeholder="Role"
-                          className="text-slate-600 border-none p-0 h-auto bg-transparent shadow-none focus-visible:ring-0"
-                        />
-                        <Pen className="h-4 w-4 text-slate-400" />
-                      </div>
+                      <Input
+                        value={editableContact.name || ''}
+                        onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Contact Name"
+                        className="text-2xl font-bold border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white shadow-none focus-visible:ring-0 mb-2"
+                      />
+                      <Input
+                        value={editableContact.role}
+                        onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
+                        placeholder="Role"
+                        className="text-slate-600 border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white shadow-none focus-visible:ring-0"
+                      />
                     </div>
+                    {!isNewContact && (
+                      <Button variant="ghost" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -286,7 +280,7 @@ const ContactDetail = () => {
                         value={editableContact.address}
                         onChange={(e) => setEditableContact(prev => ({ ...prev, address: e.target.value }))}
                         placeholder="0x..."
-                        className="font-mono text-sm border-none bg-transparent shadow-none focus-visible:ring-0 p-0"
+                        className="font-mono text-sm border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white shadow-none focus-visible:ring-0 p-2"
                       />
                       <Button variant="ghost" size="sm" onClick={handleCopyAddress}>
                         <Copy className="h-4 w-4" />
@@ -299,7 +293,7 @@ const ContactDetail = () => {
                     <h3 className="text-sm font-medium text-slate-700 mb-2">Tags</h3>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {editableContact.tags.map(tag => (
-                        <Badge key={tag} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        <Badge key={tag} variant="outline" className="w-fit bg-blue-50 text-blue-700 border-blue-200">
                           {tag}
                           <button
                             onClick={() => removeTag(tag)}
@@ -312,7 +306,7 @@ const ContactDetail = () => {
                       <div className="relative">
                         <Badge
                           variant="outline"
-                          className="cursor-pointer bg-slate-50 text-slate-600 border-slate-300 hover:bg-slate-100"
+                          className="w-fit cursor-pointer bg-slate-50 text-slate-600 border-slate-300 hover:bg-slate-100"
                           onClick={() => setShowTagSelect(!showTagSelect)}
                         >
                           <Plus className="h-3 w-3 mr-1" />
@@ -320,7 +314,7 @@ const ContactDetail = () => {
                         </Badge>
                         {showTagSelect && (
                           <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[200px] max-h-[200px] overflow-y-auto">
-                            {availableTags.map(tag => (
+                            {availableTags.sort().map(tag => (
                               <div
                                 key={tag}
                                 onClick={() => addTag(tag)}
@@ -344,7 +338,7 @@ const ContactDetail = () => {
                       value={editableContact.notes}
                       onChange={(e) => setEditableContact(prev => ({ ...prev, notes: e.target.value }))}
                       placeholder="Add notes about this contact..."
-                      className="resize-none"
+                      className="resize-none border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white"
                       rows={3}
                     />
                   </div>
@@ -485,7 +479,19 @@ const ContactDetail = () => {
                         <span className="font-medium">{editableContact.interactionCount}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Positive Tags</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-slate-600">Positive Tags</span>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-3 w-3 text-slate-400" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">
+                                Tags that indicate trustworthiness: Trusted Partner, Developer, Client, High Value
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <span className="font-medium text-green-600">
                           {editableContact.tags.filter(tag => 
                             ['Trusted Partner', 'Developer', 'Client', 'High Value'].includes(tag)
@@ -493,7 +499,19 @@ const ContactDetail = () => {
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Risk Flags</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-slate-600">Risk Flags</span>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Info className="h-3 w-3 text-slate-400" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">
+                                Tags that indicate potential risks: Flagged, Potential Scam, Unverified
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <span className="font-medium text-red-600">
                           {editableContact.tags.filter(tag => 
                             ['Flagged', 'Potential Scam', 'Unverified'].includes(tag)

@@ -48,8 +48,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     } else {
       // Yellow to green (6-10)
       const ratio = (level - 5) / 5;
-      const red = Math.round(220 * (1 - ratio)); // 220 to 0
-      const green = 200; // Toned down green
+      const red = Math.round(200 * (1 - ratio)); // 200 to 0 (darker yellow starting point)
+      const green = 180; // Toned down green
       return `rgb(${red}, ${green}, 0)`;
     }
   };

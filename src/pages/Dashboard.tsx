@@ -1,21 +1,11 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, User, Eye, Filter } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import ContactCard from "@/components/ContactCard";
 import FilterPanel from "@/components/FilterPanel";
-import { useWallet } from "@/contexts/WalletContext";
 import { useNavigate } from 'react-router-dom';
 
 export interface Contact {
@@ -23,13 +13,14 @@ export interface Contact {
   address: string;
   name?: string;
   tags: string[];
-  notes: string;
-  role: string;
+  notes?: string;
+  role?: string;
   trustLevel: number;
   lastInteraction?: Date;
   interactionCount: number;
 }
 
+// Enhanced mock data with more contacts
 const mockContacts: Contact[] = [
   {
     id: '1',
@@ -62,260 +53,227 @@ const mockContacts: Contact[] = [
     trustLevel: 2,
     lastInteraction: new Date('2024-05-20'),
     interactionCount: 3
+  },
+  {
+    id: '4',
+    address: '0x3f2h4i109551bD432803012645Hac136c9331q8d4e',
+    name: 'Carol Davis',
+    tags: ['Designer', 'NFT Creator'],
+    notes: 'Talented digital artist and NFT creator. Creates amazing artwork.',
+    role: 'Digital Artist',
+    trustLevel: 7,
+    lastInteraction: new Date('2024-05-26'),
+    interactionCount: 12
+  },
+  {
+    id: '5',
+    address: '0x1a3c5e109551bD432803012645Hac136c9331q8f6g',
+    name: 'David Wilson',
+    tags: ['DAO Member', 'Validator'],
+    notes: 'Active DAO participant and validator. Very knowledgeable about governance.',
+    role: 'DAO Governance Lead',
+    trustLevel: 8,
+    lastInteraction: new Date('2024-05-29'),
+    interactionCount: 31
+  },
+  {
+    id: '6',
+    address: '0x5h7j9k109551bD432803012645Hac136c9331q8l2m',
+    name: 'Emma Thompson',
+    tags: ['DeFi Protocol', 'Partner'],
+    notes: 'Protocol founder and strategic partner for yield farming initiatives.',
+    role: 'Protocol Founder',
+    trustLevel: 9,
+    lastInteraction: new Date('2024-05-27'),
+    interactionCount: 45
+  },
+  {
+    id: '7',
+    address: '0x2n4p6q109551bD432803012645Hac136c9331q8r8s',
+    name: 'Frank Miller',
+    tags: ['Regular Client', 'VIP'],
+    notes: 'Long-term client with consistent trading patterns. VIP status.',
+    role: 'Institutional Trader',
+    trustLevel: 8,
+    lastInteraction: new Date('2024-05-31'),
+    interactionCount: 67
+  },
+  {
+    id: '8',
+    address: '0x6t8u0v109551bD432803012645Hac136c9331q8w4x',
+    tags: ['Unverified'],
+    notes: 'New contact, limited transaction history.',
+    role: 'Unknown',
+    trustLevel: 4,
+    lastInteraction: new Date('2024-05-24'),
+    interactionCount: 2
+  },
+  {
+    id: '9',
+    address: '0x4y6z2a109551bD432803012645Hac136c9331q8b8c',
+    name: 'Grace Chen',
+    tags: ['Developer', 'High Value'],
+    notes: 'Full-stack developer specializing in Web3 applications.',
+    role: 'Web3 Developer',
+    trustLevel: 7,
+    lastInteraction: new Date('2024-05-25'),
+    interactionCount: 18
+  },
+  {
+    id: '10',
+    address: '0x8d0f2g109551bD432803012645Hac136c9331q8h4i',
+    name: 'Henry Lee',
+    tags: ['Client', 'Regular Client'],
+    notes: 'Steady client for token swaps and liquidity provision.',
+    role: 'DeFi User',
+    trustLevel: 6,
+    lastInteraction: new Date('2024-05-23'),
+    interactionCount: 29
   }
 ];
 
 const Dashboard = () => {
-  const { wallet } = useWallet();
   const navigate = useNavigate();
-  const [contacts, setContacts] = useState<Contact[]>(mockContacts);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    if (!wallet.isConnected) {
-      navigate('/');
-    }
-  }, [wallet.isConnected, navigate]);
-
+  // Get all unique tags from contacts
   const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    contacts.forEach(contact => {
-      contact.tags.forEach(tag => tags.add(tag));
+    const tagSet = new Set<string>();
+    mockContacts.forEach(contact => {
+      contact.tags.forEach(tag => tagSet.add(tag));
     });
-    return Array.from(tags);
-  }, [contacts]);
+    return Array.from(tagSet);
+  }, []);
 
+  // Filter contacts based on search and filters
   const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
-      const matchesSearch = 
-        contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    return mockContacts.filter(contact => {
+      // Search filter
+      const matchesSearch = !searchTerm || 
         contact.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.role.toLowerCase().includes(searchTerm.toLowerCase());
-      
+        contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      // Tags filter
       const matchesTags = selectedTags.length === 0 || 
         selectedTags.some(tag => contact.tags.includes(tag));
-      
+
+      // Trust level filter
       const matchesTrustLevel = trustLevelFilter === null || 
         contact.trustLevel >= trustLevelFilter;
 
       return matchesSearch && matchesTags && matchesTrustLevel;
     });
-  }, [contacts, searchTerm, selectedTags, trustLevelFilter]);
+  }, [searchTerm, selectedTags, trustLevelFilter]);
 
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const handleAddContact = () => {
+    navigate('/contact/new');
   };
-
-  const getTrustLevelColor = (level: number) => {
-    if (level >= 8) return 'text-green-600';
-    if (level >= 5) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getTrustLevelText = (level: number) => {
-    if (level >= 8) return 'High';
-    if (level >= 5) return 'Medium';
-    return 'Low';
-  };
-
-  const handleRowClick = (contactId: string) => {
-    navigate(`/contact/${contactId}`);
-  };
-
-  if (!wallet.isConnected) {
-    return null;
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Contacts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{contacts.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Trusted Partners</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {contacts.filter(c => c.trustLevel >= 8).length}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Active Tags</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{allTags.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">This Month</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {contacts.reduce((sum, c) => sum + c.interactionCount, 0)}
-              </div>
-              <p className="text-xs opacity-75">Transactions</p>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Contact Dashboard</h1>
+          <p className="text-slate-600">Manage your Web3 contacts and their trust levels</p>
         </div>
 
-        <div className="space-y-6">
-          {/* Actions Bar */}
-          <div className="flex items-center justify-end">
-            <Button onClick={() => navigate('/contact/new')}>
+        <div className="mb-6 space-y-4">
+          {/* Search Bar and Filter Toggle */}
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Search contacts by address, name, role, or tags..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="bg-white/70 backdrop-blur-sm border-slate-200"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+              {showFilters ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+            </Button>
+            <Button onClick={handleAddContact}>
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
             </Button>
           </div>
 
-          {/* Search and Filter Toggle */}
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                <Input
-                  placeholder="Search contacts by name, address, or role..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
-                />
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => setFiltersOpen(!filtersOpen)}
-                className="bg-white/70 backdrop-blur-sm border-slate-200"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
+          {/* Collapsible Filter Panel */}
+          {showFilters && (
+            <div className="animate-in slide-in-from-top-2 duration-200">
+              <FilterPanel
+                allTags={allTags}
+                selectedTags={selectedTags}
+                onTagsChange={setSelectedTags}
+                trustLevelFilter={trustLevelFilter}
+                onTrustLevelChange={setTrustLevelFilter}
+              />
             </div>
-
-            {/* Collapsible Filters */}
-            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-              <CollapsibleContent className="space-y-2">
-                <FilterPanel
-                  allTags={allTags}
-                  selectedTags={selectedTags}
-                  onTagsChange={setSelectedTags}
-                  trustLevelFilter={trustLevelFilter}
-                  onTrustLevelChange={setTrustLevelFilter}
-                />
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          {/* Contacts Table */}
-          {filteredContacts.length === 0 ? (
-            <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <User className="h-12 w-12 text-slate-400 mb-4" />
-                <h3 className="text-lg font-semibold text-slate-600 mb-2">No contacts found</h3>
-                <p className="text-slate-500 text-center mb-4">
-                  {contacts.length === 0 
-                    ? "Get started by adding your first Web3 contact" 
-                    : "Try adjusting your search or filter criteria"
-                  }
-                </p>
-                {contacts.length === 0 && (
-                  <Button onClick={() => navigate('/contact/new')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Contact
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Trust Level</TableHead>
-                    <TableHead>Tags</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContacts.map(contact => (
-                    <TableRow 
-                      key={contact.id} 
-                      className="cursor-pointer hover:bg-slate-50/50"
-                      onClick={() => handleRowClick(contact.id)}
-                    >
-                      <TableCell className="font-medium">
-                        {contact.name || 'Unknown'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 p-2 bg-slate-100 rounded">
-                          <code className="text-xs flex-1">
-                            {formatAddress(contact.address)}
-                          </code>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {contact.role}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-medium ${getTrustLevelColor(contact.trustLevel)}`}>
-                          {contact.trustLevel}/10 ({getTrustLevelText(contact.trustLevel)})
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {contact.tags.slice(0, 2).map(tag => (
-                            <Badge 
-                              key={tag} 
-                              variant="outline" 
-                              className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                          {contact.tags.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{contact.tags.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRowClick(contact.id);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
           )}
         </div>
+
+        {/* Results Summary */}
+        <div className="mb-6">
+          <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">
+                  Showing {filteredContacts.length} of {mockContacts.length} contacts
+                </span>
+                {(selectedTags.length > 0 || trustLevelFilter !== null || searchTerm) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedTags([]);
+                      setTrustLevelFilter(null);
+                    }}
+                    className="text-slate-500 hover:text-slate-700"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Contacts Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredContacts.map(contact => (
+            <ContactCard key={contact.id} contact={contact} />
+          ))}
+        </div>
+
+        {filteredContacts.length === 0 && (
+          <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+            <CardContent className="p-8 text-center">
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">No contacts found</h3>
+              <p className="text-slate-600 mb-4">
+                {searchTerm || selectedTags.length > 0 || trustLevelFilter !== null
+                  ? "Try adjusting your search or filters"
+                  : "Get started by adding your first contact"}
+              </p>
+              <Button onClick={handleAddContact}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Contact
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
