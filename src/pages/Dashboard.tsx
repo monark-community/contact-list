@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, Filter, User, Eye } from 'lucide-react';
+import { Search, Plus, User, Eye } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import AddContactDialog from "@/components/AddContactDialog";
 import FilterPanel from "@/components/FilterPanel";
 import { useWallet } from "@/contexts/WalletContext";
 import { useNavigate } from 'react-router-dom';
@@ -71,8 +71,6 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     if (!wallet.isConnected) {
@@ -104,24 +102,6 @@ const Dashboard = () => {
       return matchesSearch && matchesTags && matchesTrustLevel;
     });
   }, [contacts, searchTerm, selectedTags, trustLevelFilter]);
-
-  const handleAddContact = (newContact: Omit<Contact, 'id'>) => {
-    const contact: Contact = {
-      ...newContact,
-      id: Date.now().toString()
-    };
-    setContacts(prev => [...prev, contact]);
-  };
-
-  const handleUpdateContact = (updatedContact: Contact) => {
-    setContacts(prev => prev.map(contact => 
-      contact.id === updatedContact.id ? updatedContact : contact
-    ));
-  };
-
-  const handleDeleteContact = (contactId: string) => {
-    setContacts(prev => prev.filter(contact => contact.id !== contactId));
-  };
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -189,160 +169,136 @@ const Dashboard = () => {
               <div className="text-2xl font-bold">
                 {contacts.reduce((sum, c) => sum + c.interactionCount, 0)}
               </div>
-              <p className="text-xs opacity-75">Interactions</p>
+              <p className="text-xs opacity-75">Transactions</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Filter Panel */}
-          {isFilterOpen && (
-            <div className="lg:w-80">
-              <FilterPanel
-                allTags={allTags}
-                selectedTags={selectedTags}
-                onTagsChange={setSelectedTags}
-                trustLevelFilter={trustLevelFilter}
-                onTrustLevelChange={setTrustLevelFilter}
-              />
-            </div>
-          )}
+        <div className="space-y-6">
+          {/* Actions Bar */}
+          <div className="flex items-center justify-end">
+            <Button onClick={() => navigate('/contact/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Contact
+            </Button>
+          </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Actions Bar */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="hidden sm:flex"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                </Button>
-              </div>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Contact
-              </Button>
-            </div>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <Input
+              placeholder="Search contacts by name, address, or role..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
+            />
+          </div>
 
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-              <Input
-                placeholder="Search contacts by name, address, or role..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
-              />
-            </div>
+          {/* Filters */}
+          <FilterPanel
+            allTags={allTags}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            trustLevelFilter={trustLevelFilter}
+            onTrustLevelChange={setTrustLevelFilter}
+          />
 
-            {/* Contacts Table */}
-            {filteredContacts.length === 0 ? (
-              <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <User className="h-12 w-12 text-slate-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-600 mb-2">No contacts found</h3>
-                  <p className="text-slate-500 text-center mb-4">
-                    {contacts.length === 0 
-                      ? "Get started by adding your first Web3 contact" 
-                      : "Try adjusting your search or filter criteria"
-                    }
-                  </p>
-                  {contacts.length === 0 && (
-                    <Button onClick={() => setIsAddDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Contact
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Trust Level</TableHead>
-                      <TableHead>Tags</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredContacts.map(contact => (
-                      <TableRow 
-                        key={contact.id} 
-                        className="cursor-pointer hover:bg-slate-50/50"
-                        onClick={() => handleRowClick(contact.id)}
-                      >
-                        <TableCell className="font-medium">
-                          {contact.name || 'Unknown'}
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs bg-slate-100 px-2 py-1 rounded">
+          {/* Contacts Table */}
+          {filteredContacts.length === 0 ? (
+            <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <User className="h-12 w-12 text-slate-400 mb-4" />
+                <h3 className="text-lg font-semibold text-slate-600 mb-2">No contacts found</h3>
+                <p className="text-slate-500 text-center mb-4">
+                  {contacts.length === 0 
+                    ? "Get started by adding your first Web3 contact" 
+                    : "Try adjusting your search or filter criteria"
+                  }
+                </p>
+                {contacts.length === 0 && (
+                  <Button onClick={() => navigate('/contact/new')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Contact
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Trust Level</TableHead>
+                    <TableHead>Tags</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredContacts.map(contact => (
+                    <TableRow 
+                      key={contact.id} 
+                      className="cursor-pointer hover:bg-slate-50/50"
+                      onClick={() => handleRowClick(contact.id)}
+                    >
+                      <TableCell className="font-medium">
+                        {contact.name || 'Unknown'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 p-2 bg-slate-100 rounded">
+                          <code className="text-xs flex-1">
                             {formatAddress(contact.address)}
                           </code>
-                        </TableCell>
-                        <TableCell className="text-slate-600">
-                          {contact.role}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`font-medium ${getTrustLevelColor(contact.trustLevel)}`}>
-                            {contact.trustLevel}/10 ({getTrustLevelText(contact.trustLevel)})
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {contact.tags.slice(0, 2).map(tag => (
-                              <Badge 
-                                key={tag} 
-                                variant="outline" 
-                                className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                            {contact.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{contact.tags.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRowClick(contact.id);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            )}
-          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {contact.role}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-medium ${getTrustLevelColor(contact.trustLevel)}`}>
+                          {contact.trustLevel}/10 ({getTrustLevelText(contact.trustLevel)})
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {contact.tags.slice(0, 2).map(tag => (
+                            <Badge 
+                              key={tag} 
+                              variant="outline" 
+                              className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {contact.tags.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{contact.tags.length - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(contact.id);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
         </div>
       </div>
-
-      {/* Add Contact Dialog */}
-      <AddContactDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onAdd={handleAddContact}
-        existingTags={allTags}
-      />
     </div>
   );
 };
