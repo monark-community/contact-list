@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Contact } from "@/pages/Index";
+import { Contact } from "@/pages/Dashboard";
 import { useToast } from "@/hooks/use-toast";
 
 interface EditContactDialogProps {

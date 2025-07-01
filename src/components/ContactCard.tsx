@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Contact } from "@/pages/Index";
+import { Contact } from "@/pages/Dashboard";
 import EditContactDialog from "./EditContactDialog";
 import { useToast } from "@/hooks/use-toast";
 
