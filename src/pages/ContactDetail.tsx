@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info, Pen, Plus, Check } from 'lucide-react';
+import { ArrowLeft, Copy, Trash2, Calendar, MessageCircle, Info, Plus, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ import {
 import { Contact } from "@/pages/Dashboard";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data - in real app this would come from props or API
+// Enhanced mock data with more contacts
 const mockContacts: Contact[] = [
   {
     id: '1',
@@ -212,18 +211,20 @@ const ContactDetail = () => {
   };
 
   const getTrustLevelColor = (level: number) => {
-    // Improved color gradient: red -> yellow -> green
-    if (level <= 5) {
-      // Red to yellow (1-5)
-      const ratio = (level - 1) / 4;
+    if (level <= 3) {
+      const ratio = (level - 1) / 2;
       const red = 220;
-      const green = Math.round(180 + (75 * ratio)); // 180 to 255
+      const green = Math.round(60 + (40 * ratio));
+      return `rgb(${red}, ${green}, 0)`;
+    } else if (level <= 5) {
+      const ratio = (level - 3) / 2;
+      const red = Math.round(220 - (40 * ratio));
+      const green = Math.round(100 + (80 * ratio));
       return `rgb(${red}, ${green}, 0)`;
     } else {
-      // Yellow to green (6-10)
       const ratio = (level - 5) / 5;
-      const red = Math.round(200 * (1 - ratio)); // 200 to 0 (darker yellow starting point)
-      const green = 180; // Toned down green
+      const red = Math.round(180 * (1 - ratio));
+      const green = 180;
       return `rgb(${red}, ${green}, 0)`;
     }
   };
@@ -255,13 +256,13 @@ const ContactDetail = () => {
                         value={editableContact.name || ''}
                         onChange={(e) => setEditableContact(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="Contact Name"
-                        className="text-2xl font-bold border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white shadow-none focus-visible:ring-0 mb-2"
+                        className="text-2xl font-bold mb-2"
                       />
                       <Input
                         value={editableContact.role}
                         onChange={(e) => setEditableContact(prev => ({ ...prev, role: e.target.value }))}
                         placeholder="Role"
-                        className="text-slate-600 border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white shadow-none focus-visible:ring-0"
+                        className="text-slate-600"
                       />
                     </div>
                     {!isNewContact && (
@@ -280,7 +281,7 @@ const ContactDetail = () => {
                         value={editableContact.address}
                         onChange={(e) => setEditableContact(prev => ({ ...prev, address: e.target.value }))}
                         placeholder="0x..."
-                        className="font-mono text-sm border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white shadow-none focus-visible:ring-0 p-2"
+                        className="font-mono text-sm"
                       />
                       <Button variant="ghost" size="sm" onClick={handleCopyAddress}>
                         <Copy className="h-4 w-4" />
@@ -338,7 +339,7 @@ const ContactDetail = () => {
                       value={editableContact.notes}
                       onChange={(e) => setEditableContact(prev => ({ ...prev, notes: e.target.value }))}
                       placeholder="Add notes about this contact..."
-                      className="resize-none border-2 border-dashed border-slate-300 hover:border-slate-400 focus:border-blue-500 bg-slate-50/50 hover:bg-slate-100/50 focus:bg-white"
+                      className="resize-none"
                       rows={3}
                     />
                   </div>
@@ -348,38 +349,6 @@ const ContactDetail = () => {
                   </Button>
                 </CardContent>
               </Card>
-
-              {/* Transactions List */}
-              {!isNewContact && (
-                <Card className="bg-white/70 backdrop-blur-sm border-slate-200 mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Transactions with this Contact</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {mockTransactions.map(tx => (
-                        <div key={tx.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-sm font-medium ${tx.type === 'Sent' ? 'text-red-600' : 'text-green-600'}`}>
-                                {tx.type}
-                              </span>
-                              <span className="text-sm text-slate-600">{tx.amount}</span>
-                            </div>
-                            <code className="text-xs text-slate-500">
-                              {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
-                            </code>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-slate-600">{formatDate(tx.date)}</div>
-                            <div className="text-xs text-green-600">{tx.status}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
             {/* Sidebar */}
@@ -397,31 +366,37 @@ const ContactDetail = () => {
                     >
                       {editableContact.trustLevel}/10
                     </div>
+                  </div>
+                  
+                  {/* Merged slider and colored bar */}
+                  <div className="relative">
                     <div 
-                      className="w-full rounded-full h-2 mb-4"
+                      className="w-full rounded-full h-6 mb-4 relative overflow-hidden"
                       style={{ backgroundColor: getTrustLevelBgColor(editableContact.trustLevel) }}
                     >
                       <div 
-                        className="h-2 rounded-full"
+                        className="h-6 rounded-full transition-all duration-200"
                         style={{ 
                           backgroundColor: getTrustLevelColor(editableContact.trustLevel),
                           width: `${editableContact.trustLevel * 10}%` 
                         }}
                       />
+                      <div className="absolute inset-0">
+                        <Slider
+                          value={[editableContact.trustLevel]}
+                          onValueChange={(value) => setEditableContact(prev => ({ ...prev, trustLevel: value[0] }))}
+                          max={10}
+                          min={1}
+                          step={1}
+                          className="w-full h-6 [&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:shadow-md [&_[role=slider]]:w-6 [&_[role=slider]]:h-6"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <Slider
-                    value={[editableContact.trustLevel]}
-                    onValueChange={(value) => setEditableContact(prev => ({ ...prev, trustLevel: value[0] }))}
-                    max={10}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
                 </CardContent>
               </Card>
 
-              {/* Suggested Trust Level */}
+              {/* Suggested Trust Level with Detailed Metrics */}
               <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
                 <CardHeader>
                   <div className="flex items-center gap-2">

@@ -1,12 +1,14 @@
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Filter, ChevronDown, ChevronUp, Eye, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import ContactCard from "@/components/ContactCard";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import FilterPanel from "@/components/FilterPanel";
 import { useNavigate } from 'react-router-dom';
+import { useToast } from "@/hooks/use-toast";
 
 export interface Contact {
   id: string;
@@ -129,11 +131,66 @@ const mockContacts: Contact[] = [
     trustLevel: 6,
     lastInteraction: new Date('2024-05-23'),
     interactionCount: 29
+  },
+  {
+    id: '11',
+    address: '0x4f8h2j109551bD432803012645Hac136c9331q8k6l',
+    name: 'Isabella Rodriguez',
+    tags: ['Investor', 'High Value', 'VIP'],
+    notes: 'Angel investor in multiple DeFi projects. Excellent track record.',
+    role: 'Angel Investor',
+    trustLevel: 9,
+    lastInteraction: new Date('2024-06-01'),
+    interactionCount: 52
+  },
+  {
+    id: '12',
+    address: '0x7m9n1p109551bD432803012645Hac136c9331q8r4s',
+    name: 'Jack Thompson',
+    tags: ['Developer', 'Smart Contract'],
+    notes: 'Experienced smart contract auditor. Very thorough in code reviews.',
+    role: 'Smart Contract Auditor',
+    trustLevel: 8,
+    lastInteraction: new Date('2024-05-29'),
+    interactionCount: 28
+  },
+  {
+    id: '13',
+    address: '0x2t4u6v109551bD432803012645Hac136c9331q8w8x',
+    tags: ['Flagged', 'Suspicious Activity'],
+    notes: 'Multiple reports of failed transactions and unresponsive behavior.',
+    role: 'Unknown',
+    trustLevel: 1,
+    lastInteraction: new Date('2024-05-15'),
+    interactionCount: 1
+  },
+  {
+    id: '14',
+    address: '0x9y1z3a109551bD432803012645Hac136c9331q8b5c',
+    name: 'Liam Foster',
+    tags: ['NFT Creator', 'Artist'],
+    notes: 'Digital artist with growing reputation in the NFT space.',
+    role: 'NFT Artist',
+    trustLevel: 6,
+    lastInteraction: new Date('2024-05-28'),
+    interactionCount: 14
+  },
+  {
+    id: '15',
+    address: '0x6d8f0g109551bD432803012645Hac136c9331q8h2i',
+    name: 'Maya Patel',
+    tags: ['DAO Member', 'Governance', 'Active'],
+    notes: 'Very active in DAO governance discussions and proposals.',
+    role: 'DAO Contributor',
+    trustLevel: 7,
+    lastInteraction: new Date('2024-05-30'),
+    interactionCount: 39
   }
 ];
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
@@ -175,18 +232,45 @@ const Dashboard = () => {
     navigate('/contact/new');
   };
 
-  const handleUpdateContact = (updatedContact: Contact) => {
-    setContacts(prevContacts => 
-      prevContacts.map(contact => 
-        contact.id === updatedContact.id ? updatedContact : contact
-      )
-    );
+  const handleViewContact = (contactId: string) => {
+    navigate(`/contact/${contactId}`);
   };
 
   const handleDeleteContact = (contactId: string) => {
     setContacts(prevContacts => 
       prevContacts.filter(contact => contact.id !== contactId)
     );
+    toast({
+      title: "Contact deleted",
+      description: "Contact has been removed from your list",
+    });
+  };
+
+  const formatDate = (date?: Date) => {
+    if (!date) return 'Never';
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getTrustLevelColor = (level: number) => {
+    if (level <= 3) return 'text-red-600';
+    if (level <= 5) return 'text-amber-600';
+    if (level <= 7) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  const getTrustLevelBg = (level: number) => {
+    if (level <= 3) return 'bg-red-100';
+    if (level <= 5) return 'bg-amber-100';
+    if (level <= 7) return 'bg-yellow-100';
+    return 'bg-green-100';
   };
 
   return (
@@ -239,61 +323,107 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Results Summary */}
-        <div className="mb-6">
-          <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">
-                  Showing {filteredContacts.length} of {contacts.length} contacts
-                </span>
-                {(selectedTags.length > 0 || trustLevelFilter !== null || searchTerm) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setSelectedTags([]);
-                      setTrustLevelFilter(null);
-                    }}
-                    className="text-slate-500 hover:text-slate-700"
-                  >
-                    Clear All Filters
-                  </Button>
-                )}
+        {/* Contacts Table */}
+        <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Tags</TableHead>
+                  <TableHead>Trust Level</TableHead>
+                  <TableHead>Last Interaction</TableHead>
+                  <TableHead>Transactions</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredContacts.map(contact => (
+                  <TableRow key={contact.id} className="hover:bg-slate-50/50">
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-slate-900">
+                          {contact.name || 'Anonymous'}
+                        </div>
+                        <div className="text-sm text-slate-500 font-mono">
+                          {contact.address.slice(0, 10)}...{contact.address.slice(-8)}
+                        </div>
+                        {contact.role && (
+                          <div className="text-xs text-slate-400">{contact.role}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {contact.tags.slice(0, 2).map(tag => (
+                          <Badge 
+                            key={tag}
+                            variant="secondary" 
+                            className="text-xs"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                        {contact.tags.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{contact.tags.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${getTrustLevelBg(contact.trustLevel)} ${getTrustLevelColor(contact.trustLevel)}`}>
+                          {contact.trustLevel}/10
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600">
+                      {formatDate(contact.lastInteraction)}
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600">
+                      {contact.interactionCount}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewContact(contact.id)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteContact(contact.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {filteredContacts.length === 0 && (
+              <div className="p-8 text-center">
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">No contacts found</h3>
+                <p className="text-slate-600 mb-4">
+                  {searchTerm || selectedTags.length > 0 || trustLevelFilter !== null
+                    ? "Try adjusting your search or filters"
+                    : "Get started by adding your first contact"}
+                </p>
+                <Button onClick={handleAddContact}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Contact
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contacts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredContacts.map(contact => (
-            <ContactCard 
-              key={contact.id} 
-              contact={contact} 
-              onUpdate={handleUpdateContact}
-              onDelete={handleDeleteContact}
-            />
-          ))}
-        </div>
-
-        {filteredContacts.length === 0 && (
-          <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-            <CardContent className="p-8 text-center">
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">No contacts found</h3>
-              <p className="text-slate-600 mb-4">
-                {searchTerm || selectedTags.length > 0 || trustLevelFilter !== null
-                  ? "Try adjusting your search or filters"
-                  : "Get started by adding your first contact"}
-              </p>
-              <Button onClick={handleAddContact}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Contact
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

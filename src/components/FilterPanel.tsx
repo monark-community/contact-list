@@ -38,18 +38,20 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   const hasActiveFilters = selectedTags.length > 0 || trustLevelFilter !== null;
 
   const getTrustLevelColor = (level: number) => {
-    // Improved color gradient: red -> yellow -> green
-    if (level <= 5) {
-      // Red to yellow (1-5)
-      const ratio = (level - 1) / 4;
+    if (level <= 3) {
+      const ratio = (level - 1) / 2;
       const red = 220;
-      const green = Math.round(180 + (75 * ratio)); // 180 to 255
+      const green = Math.round(60 + (40 * ratio));
+      return `rgb(${red}, ${green}, 0)`;
+    } else if (level <= 5) {
+      const ratio = (level - 3) / 2;
+      const red = Math.round(220 - (40 * ratio));
+      const green = Math.round(100 + (80 * ratio));
       return `rgb(${red}, ${green}, 0)`;
     } else {
-      // Yellow to green (6-10)
       const ratio = (level - 5) / 5;
-      const red = Math.round(200 * (1 - ratio)); // 200 to 0 (darker yellow starting point)
-      const green = 180; // Toned down green
+      const red = Math.round(180 * (1 - ratio));
+      const green = 180;
       return `rgb(${red}, ${green}, 0)`;
     }
   };
@@ -159,30 +161,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             </div>
           )}
         </div>
-
-        {/* Filter Summary */}
-        {hasActiveFilters && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="text-sm font-medium text-slate-700 mb-2">
-                Active Filters
-              </h4>
-              <div className="space-y-1">
-                {trustLevelFilter !== null && (
-                  <div className="text-xs text-slate-600">
-                    Trust Level: {trustLevelFilter}+
-                  </div>
-                )}
-                {selectedTags.length > 0 && (
-                  <div className="text-xs text-slate-600">
-                    Tags: {selectedTags.join(', ')}
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
       </CardContent>
     </Card>
   );
