@@ -1,291 +1,134 @@
 
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, Wallet, Tag, Filter, User } from 'lucide-react';
+import React from 'react';
+import { Shield, Users, Tag, Zap, Eye, Lock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ContactCard from "@/components/ContactCard";
-import AddContactDialog from "@/components/AddContactDialog";
-import FilterPanel from "@/components/FilterPanel";
+import { useNavigate } from 'react-router-dom';
 
-export interface Contact {
-  id: string;
-  address: string;
-  name?: string;
-  tags: string[];
-  notes: string;
-  role: string;
-  trustLevel: number;
-  lastInteraction?: Date;
-  interactionCount: number;
-}
-
-const mockContacts: Contact[] = [
+const features = [
   {
-    id: '1',
-    address: '0x742d35Cc6634C0532925a3b8D5c8c50B7C3a5d2A',
-    name: 'Alice Johnson',
-    tags: ['Developer', 'Trusted Partner'],
-    notes: 'Lead developer for DeFi protocol. Very responsive and professional.',
-    role: 'Smart Contract Developer',
-    trustLevel: 9,
-    lastInteraction: new Date('2024-05-28'),
-    interactionCount: 15
+    icon: Users,
+    title: "Organize Your Web3 Network",
+    description: "Create and manage a comprehensive directory of wallet addresses with custom labels, notes, and categories."
   },
   {
-    id: '2',
-    address: '0x8ba1f109551bD432803012645Hac136c9331q8c4c',
-    name: 'Bob Smith',
-    tags: ['Client', 'High Value'],
-    notes: 'Regular client for NFT marketplace transactions.',
-    role: 'NFT Collector',
-    trustLevel: 8,
-    lastInteraction: new Date('2024-05-30'),
-    interactionCount: 23
+    icon: Tag,
+    title: "Smart Tagging System",
+    description: "Tag addresses as 'Trusted Partner', 'Client', 'Developer', or create custom tags that fit your workflow."
   },
   {
-    id: '3',
-    address: '0x9f3hj109551bD432803012645Hac136c9331q8s9d',
-    tags: ['Flagged', 'Potential Scam'],
-    notes: 'Multiple failed transactions and suspicious behavior.',
-    role: 'Unknown',
-    trustLevel: 2,
-    lastInteraction: new Date('2024-05-20'),
-    interactionCount: 3
+    icon: Shield,
+    title: "Trust Level Scoring",
+    description: "Assign trust levels from 1-10 to help you quickly identify reliable contacts and potential risks."
+  },
+  {
+    icon: Zap,
+    title: "Interaction Tracking",
+    description: "Keep track of your transaction history and interaction frequency with each contact."
+  },
+  {
+    icon: Eye,
+    title: "Advanced Filtering",
+    description: "Search and filter your contacts by name, address, tags, trust level, or interaction history."
+  },
+  {
+    icon: Lock,
+    title: "Privacy First",
+    description: "Your contact data is stored securely and privately. You control who sees what information."
   }
 ];
 
 const Index = () => {
-  const [contacts, setContacts] = useState<Contact[]>(mockContacts);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    contacts.forEach(contact => {
-      contact.tags.forEach(tag => tags.add(tag));
-    });
-    return Array.from(tags);
-  }, [contacts]);
-
-  const filteredContacts = useMemo(() => {
-    return contacts.filter(contact => {
-      const matchesSearch = 
-        contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.role.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesTags = selectedTags.length === 0 || 
-        selectedTags.some(tag => contact.tags.includes(tag));
-      
-      const matchesTrustLevel = trustLevelFilter === null || 
-        contact.trustLevel >= trustLevelFilter;
-
-      return matchesSearch && matchesTags && matchesTrustLevel;
-    });
-  }, [contacts, searchTerm, selectedTags, trustLevelFilter]);
-
-  const handleAddContact = (newContact: Omit<Contact, 'id'>) => {
-    const contact: Contact = {
-      ...newContact,
-      id: Date.now().toString()
-    };
-    setContacts(prev => [...prev, contact]);
-  };
-
-  const handleUpdateContact = (updatedContact: Contact) => {
-    setContacts(prev => prev.map(contact => 
-      contact.id === updatedContact.id ? updatedContact : contact
-    ));
-  };
-
-  const handleDeleteContact = (contactId: string) => {
-    setContacts(prev => prev.filter(contact => contact.id !== contactId));
+  const handleGetStarted = () => {
+    // This will later trigger wallet connection
+    navigate('/dashboard');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                <Wallet className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  TrustList
-                </h1>
-                <p className="text-sm text-slate-600">Your Web3 Contact Manager</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="hidden sm:flex"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">      
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
+              Your Web3 Contact Manager
+            </h1>
+            <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
+              Build and maintain trust relationships in the decentralized world. 
+              Organize wallet addresses, track interactions, and manage your Web3 professional network.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 py-3">
+                Connect Wallet & Get Started
               </Button>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Contact
+              <Button variant="outline" size="lg" className="text-lg px-8 py-3">
+                Learn More
               </Button>
             </div>
           </div>
         </div>
+        
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12">
+          <div className="w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
+        </div>
+        <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12">
+          <div className="w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
+        </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Contacts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{contacts.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Trusted Partners</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {contacts.filter(c => c.trustLevel >= 8).length}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Active Tags</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{allTags.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">This Month</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {contacts.reduce((sum, c) => sum + c.interactionCount, 0)}
-              </div>
-              <p className="text-xs opacity-75">Interactions</p>
-            </CardContent>
-          </Card>
+      {/* Features Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
+            Everything you need to manage Web3 relationships
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            From individual traders to DAOs, TrustList helps you build and maintain 
+            professional relationships in the decentralized ecosystem.
+          </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Filter Panel */}
-          {isFilterOpen && (
-            <div className="lg:w-80">
-              <FilterPanel
-                allTags={allTags}
-                selectedTags={selectedTags}
-                onTagsChange={setSelectedTags}
-                trustLevelFilter={trustLevelFilter}
-                onTrustLevelChange={setTrustLevelFilter}
-              />
-            </div>
-          )}
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-              <Input
-                placeholder="Search contacts by name, address, or role..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200"
-              />
-            </div>
-
-            {/* Active Filters */}
-            {(selectedTags.length > 0 || trustLevelFilter !== null) && (
-              <div className="mb-6">
-                <div className="flex flex-wrap gap-2">
-                  {selectedTags.map(tag => (
-                    <Badge 
-                      key={tag} 
-                      variant="secondary" 
-                      className="bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer"
-                      onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
-                    >
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag} ×
-                    </Badge>
-                  ))}
-                  {trustLevelFilter !== null && (
-                    <Badge 
-                      variant="secondary"
-                      className="bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer"
-                      onClick={() => setTrustLevelFilter(null)}
-                    >
-                      Trust Level {trustLevelFilter}+ ×
-                    </Badge>
-                  )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <Card key={index} className="bg-white/70 backdrop-blur-sm border-slate-200 hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
+                  <feature.icon className="h-6 w-6 text-white" />
                 </div>
-              </div>
-            )}
-
-            {/* Contacts Grid */}
-            {filteredContacts.length === 0 ? (
-              <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <User className="h-12 w-12 text-slate-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-600 mb-2">No contacts found</h3>
-                  <p className="text-slate-500 text-center mb-4">
-                    {contacts.length === 0 
-                      ? "Get started by adding your first Web3 contact" 
-                      : "Try adjusting your search or filter criteria"
-                    }
-                  </p>
-                  {contacts.length === 0 && (
-                    <Button onClick={() => setIsAddDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Contact
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredContacts.map(contact => (
-                  <ContactCard
-                    key={contact.id}
-                    contact={contact}
-                    onUpdate={handleUpdateContact}
-                    onDelete={handleDeleteContact}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+                <CardTitle className="text-xl text-slate-800">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-600">{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
-      {/* Add Contact Dialog */}
-      <AddContactDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onAdd={handleAddContact}
-        existingTags={allTags}
-      />
+      {/* CTA Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Ready to organize your Web3 network?
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of Web3 professionals who trust TrustList to manage their connections.
+            </p>
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              onClick={handleGetStarted}
+              className="text-lg px-8 py-3 bg-white text-blue-600 hover:bg-blue-50"
+            >
+              Get Started Now
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
