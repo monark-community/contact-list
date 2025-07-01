@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Trash2, Shield, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -91,12 +90,15 @@ const BulkActionsToolbar = ({ selectedCount, onClearSelection, onBulkDelete, onB
             </DialogDescription>
           </DialogHeader>
           <div className="py-6">
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Trust Level</span>
-                <span className="text-sm font-bold">{trustLevel[0]}/10</span>
+                <span className="text-sm font-medium text-slate-700">Trust Level</span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${getTrustLevelColor(trustLevel[0])}`}></div>
+                  <span className="text-lg font-bold text-slate-900">{trustLevel[0]}/10</span>
+                </div>
               </div>
-              <div className="relative">
+              <div className="space-y-3">
                 <Slider
                   value={trustLevel}
                   onValueChange={setTrustLevel}
@@ -105,9 +107,11 @@ const BulkActionsToolbar = ({ selectedCount, onClearSelection, onBulkDelete, onB
                   step={1}
                   className="w-full"
                 />
-                <div className="absolute inset-0 -z-10 rounded-full h-2 bg-gradient-to-r from-red-200 via-yellow-200 to-green-200"></div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Low Trust</span>
+                  <span>High Trust</span>
+                </div>
               </div>
-              <div className={`w-full h-3 rounded-full ${getTrustLevelColor(trustLevel[0])}`}></div>
             </div>
           </div>
           <DialogFooter>
