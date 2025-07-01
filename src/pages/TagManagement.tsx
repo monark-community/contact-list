@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Search, X } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Plus, Search, X } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import BulkActionsToolbar from "@/components/BulkActionsToolbar";
 import { useToast } from "@/hooks/use-toast";
 
@@ -101,7 +109,7 @@ const TagManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const tagsPerPage = 10;
+  const tagsPerPage = 20;
 
   const filteredTags = mockTags.filter(tag =>
     tag.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +137,6 @@ const TagManagement = () => {
   };
 
   const handleBulkDelete = () => {
-    // In a real app, this would delete from backend
     console.log('Bulk deleting tags:', selectedTags);
     setSelectedTags([]);
   };
@@ -150,44 +157,51 @@ const TagManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <Button onClick={() => navigate('/tags/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Tag
-          </Button>
+        </div>
+
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Tag Management</h1>
+          <p className="text-slate-600">Organize and manage your contact tags with trust modifiers</p>
+        </div>
+
+        {/* Search Bar and Actions Row */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchTerm('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            <Button onClick={() => navigate('/tags/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Tag
+            </Button>
+          </div>
         </div>
 
         <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-slate-800">Tag Management</CardTitle>
-            <div className="flex items-center gap-4 mt-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search tags..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchTerm('')}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             {selectedTags.length > 0 && (
               <BulkActionsToolbar
                 selectedCount={selectedTags.length}
@@ -197,60 +211,58 @@ const TagManagement = () => {
               />
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-4 w-12">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedTags.length === currentTags.length && currentTags.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead>Tag Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Trust Modifier</TableHead>
+                  <TableHead>Usage Count</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentTags.map((tag) => (
+                  <TableRow
+                    key={tag.id}
+                    className="cursor-pointer hover:bg-slate-50/50"
+                    onClick={() => navigate(`/tags/${tag.id}`)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Checkbox
-                        checked={selectedTags.length === currentTags.length && currentTags.length > 0}
-                        onCheckedChange={handleSelectAll}
+                        checked={selectedTags.includes(tag.id)}
+                        onCheckedChange={(checked) => handleSelectTag(tag.id, checked as boolean)}
                       />
-                    </th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-700">Tag Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-700">Description</th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-700">Trust Modifier</th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-700">Usage Count</th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-700">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentTags.map((tag) => (
-                    <tr
-                      key={tag.id}
-                      className="border-b border-slate-100 hover:bg-slate-50/50 cursor-pointer"
-                      onClick={() => navigate(`/tags/${tag.id}`)}
-                    >
-                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedTags.includes(tag.id)}
-                          onCheckedChange={(checked) => handleSelectTag(tag.id, checked as boolean)}
-                        />
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                          {tag.name}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600 max-w-xs truncate">
-                        {tag.description}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge className={`${getTrustModifierColor(tag.trustModifier)} border-0`}>
-                          {getTrustModifierText(tag.trustModifier)}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        {tag.usageCount} contacts
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 text-sm">
-                        {tag.createdAt.toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {tag.name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-600 max-w-xs truncate">
+                      {tag.description}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`${getTrustModifierColor(tag.trustModifier)} border-0`}>
+                        {getTrustModifierText(tag.trustModifier)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {tag.usageCount} contacts
+                    </TableCell>
+                    <TableCell className="text-slate-500 text-sm">
+                      {tag.createdAt.toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
             {filteredTags.length === 0 && (
               <div className="text-center py-12">
