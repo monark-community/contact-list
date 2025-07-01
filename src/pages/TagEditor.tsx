@@ -82,7 +82,7 @@ const TagEditor = () => {
             )}
           </div>
 
-          <div className="max-w-2xl mx-auto">
+          <div className="mx-auto">
             <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold text-slate-800">
