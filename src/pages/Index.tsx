@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Shield, Users, Tag, Zap, Eye, Lock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ const Index = () => {
     }
   }, [wallet.isConnected, navigate]);
 
-  const handleGetStarted = () => {
+  const handleConnectWallet = () => {
     connect();
     navigate('/dashboard');
   };
@@ -66,12 +67,9 @@ const Index = () => {
               Build and maintain trust relationships in the decentralized world. 
               Organize wallet addresses, track interactions, and manage your Web3 professional network.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 py-3">
-                Connect Wallet & Get Started
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-3">
-                Learn More
+            <div className="flex justify-center">
+              <Button size="lg" onClick={handleConnectWallet} className="text-lg px-8 py-3">
+                Connect Wallet
               </Button>
             </div>
           </div>
@@ -128,14 +126,69 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="secondary" 
-              onClick={handleGetStarted}
+              onClick={handleConnectWallet}
               className="text-lg px-8 py-3 bg-white text-blue-600 hover:bg-blue-50"
             >
-              Get Started Now
+              Connect Wallet
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-slate-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    TrustList
+                  </h3>
+                </div>
+              </div>
+              <p className="text-slate-400 mb-4 max-w-md">
+                Your comprehensive Web3 contact manager. Build trust, track relationships, 
+                and organize your decentralized network with confidence.
+              </p>
+              <p className="text-sm text-slate-500">
+                © 2024 TrustList. Built for the decentralized future.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Features</h4>
+              <ul className="space-y-2 text-slate-400">
+                <li>Contact Management</li>
+                <li>Trust Scoring</li>
+                <li>Smart Tagging</li>
+                <li>Transaction History</li>
+                <li>Advanced Filtering</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Resources</h4>
+              <ul className="space-y-2 text-slate-400">
+                <li>Documentation</li>
+                <li>Security</li>
+                <li>Privacy Policy</li>
+                <li>Terms of Service</li>
+                <li>Support</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-slate-800 mt-8 pt-8 text-center">
+            <p className="text-slate-500">
+              Secure, private, and built for Web3 professionals worldwide.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

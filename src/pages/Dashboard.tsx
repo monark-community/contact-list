@@ -1,11 +1,11 @@
-
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Filter, ChevronDown, ChevronUp, Eye, Trash2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import FilterPanel from "@/components/FilterPanel";
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -196,6 +196,7 @@ const Dashboard = () => {
   const [trustLevelFilter, setTrustLevelFilter] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>(mockContacts);
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
 
   // Get all unique tags from contacts
   const allTags = useMemo(() => {
@@ -232,18 +233,24 @@ const Dashboard = () => {
     navigate('/contact/new');
   };
 
-  const handleViewContact = (contactId: string) => {
+  const handleRowClick = (contactId: string) => {
     navigate(`/contact/${contactId}`);
   };
 
-  const handleDeleteContact = (contactId: string) => {
-    setContacts(prevContacts => 
-      prevContacts.filter(contact => contact.id !== contactId)
-    );
-    toast({
-      title: "Contact deleted",
-      description: "Contact has been removed from your list",
-    });
+  const handleSelectContact = (contactId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedContacts(prev => [...prev, contactId]);
+    } else {
+      setSelectedContacts(prev => prev.filter(id => id !== contactId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedContacts(filteredContacts.map(contact => contact.id));
+    } else {
+      setSelectedContacts([]);
+    }
   };
 
   const formatDate = (date?: Date) => {
@@ -329,17 +336,32 @@ const Dashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Tags</TableHead>
                   <TableHead>Trust Level</TableHead>
                   <TableHead>Last Interaction</TableHead>
                   <TableHead>Transactions</TableHead>
-                  <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredContacts.map(contact => (
-                  <TableRow key={contact.id} className="hover:bg-slate-50/50">
+                  <TableRow 
+                    key={contact.id} 
+                    className="hover:bg-slate-50/50 cursor-pointer"
+                    onClick={() => handleRowClick(contact.id)}
+                  >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedContacts.includes(contact.id)}
+                        onCheckedChange={(checked) => handleSelectContact(contact.id, checked as boolean)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div>
                         <div className="font-medium text-slate-900">
@@ -383,25 +405,6 @@ const Dashboard = () => {
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">
                       {contact.interactionCount}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewContact(contact.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteContact(contact.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
