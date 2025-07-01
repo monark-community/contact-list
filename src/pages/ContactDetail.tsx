@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Trash2, Info, Plus, Search, Settings } from 'lucide-react';
+import { ArrowLeft, Copy, Trash2, Info, Plus, Search, Settings, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Contact } from "@/pages/Dashboard";
 import { useToast } from "@/hooks/use-toast";
 
@@ -64,7 +71,8 @@ const mockTransactions = [
     type: 'Sent',
     amount: '0.5 ETH',
     date: new Date('2024-05-28'),
-    status: 'Confirmed'
+    status: 'Confirmed',
+    contactId: '1'
   },
   {
     id: '2',
@@ -72,7 +80,8 @@ const mockTransactions = [
     type: 'Received',
     amount: '1.2 ETH',
     date: new Date('2024-05-25'),
-    status: 'Confirmed'
+    status: 'Confirmed',
+    contactId: '1'
   },
   {
     id: '3',
@@ -80,7 +89,26 @@ const mockTransactions = [
     type: 'Sent',
     amount: '0.8 ETH',
     date: new Date('2024-05-20'),
-    status: 'Confirmed'
+    status: 'Confirmed',
+    contactId: '1'
+  },
+  {
+    id: '4',
+    hash: '0x4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f',
+    type: 'Received',
+    amount: '2.1 ETH',
+    date: new Date('2024-05-15'),
+    status: 'Confirmed',
+    contactId: '2'
+  },
+  {
+    id: '5',
+    hash: '0x5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a',
+    type: 'Sent',
+    amount: '0.3 ETH',
+    date: new Date('2024-05-12'),
+    status: 'Pending',
+    contactId: '1'
   }
 ];
 
@@ -263,10 +291,33 @@ const ContactDetail = () => {
     return color.replace('rgb(', 'rgba(').replace(')', ', 0.1)');
   };
 
+  // Get transactions for this contact
+  const contactTransactions = mockTransactions.filter(tx => tx.contactId === id);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Confirmed':
+        return 'text-green-600 bg-green-50 border-green-200';
+      case 'Pending':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'Failed':
+        return 'text-red-600 bg-red-50 border-red-200';
+      default:
+        return 'text-slate-600 bg-slate-50 border-slate-200';
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    return type === 'Sent' ? 
+      <TrendingUp className="h-4 w-4 text-red-500" /> : 
+      <TrendingDown className="h-4 w-4 text-green-500" />;
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
           <div className="mb-6 flex items-center justify-between">
             <Button variant="ghost" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -281,8 +332,9 @@ const ContactDetail = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Info */}
-            <div className="lg:col-span-2">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Contact Info Card */}
               <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
                 <CardHeader>
                   <CardTitle className="text-2xl font-bold text-slate-800">
@@ -449,6 +501,80 @@ const ContactDetail = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Transactions History Card */}
+              {!isNewContact && contactTransactions.length > 0 && (
+                <Card className="bg-white/70 backdrop-blur-sm border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold text-slate-800">
+                      Transaction History
+                    </CardTitle>
+                    <p className="text-sm text-slate-600">
+                      Recent transactions with this contact
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Hash</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contactTransactions.map((transaction) => (
+                          <TableRow key={transaction.id} className="hover:bg-slate-50/50">
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getTypeIcon(transaction.type)}
+                                <span className={`font-medium ${
+                                  transaction.type === 'Sent' ? 'text-red-600' : 'text-green-600'
+                                }`}>
+                                  {transaction.type}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono font-medium">
+                                {transaction.amount}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-slate-600">
+                              {formatDate(transaction.date)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={getStatusColor(transaction.status)}>
+                                {transaction.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-sm text-slate-500">
+                                {transaction.hash.slice(0, 8)}...{transaction.hash.slice(-6)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View on block explorer</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Sidebar - Trust Level Cards */}
